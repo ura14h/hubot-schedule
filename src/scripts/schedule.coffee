@@ -52,19 +52,19 @@ module.exports = (robot) ->
     if msg.envelope.user.roomType == 'd'
       prefix = ''
     msg.send """
-      Bot schedule commands are:
-      > #{prefix}schedule help -- Show this
-      > #{prefix}schedule [add|new] "<datetime pattern>" <message> -- Schedule a message that runs on a specific date and time
-      > #{prefix}schedule [add|new] "<cron pattern>" <message> -- Schedule a message that runs recurrently
-      > #{prefix}schedule [add|new] #<room> "<datetime pattern>" <message> -- Schedule a message to a specific room that runs on a specific date and time
-      > #{prefix}schedule [add|new] #<room> "<cron pattern>" <message> -- Schedule a message to a specific room that runs recurrently
-      > #{prefix}schedule [cancel|del|delete|remove] <id> -- Cancel the schedule
-      > #{prefix}schedule [upd|update] <id> <message> -- Update scheduled message
-      > #{prefix}schedule list -- List all scheduled messages for current room
-      > #{prefix}schedule list #<room> -- List all scheduled messages for specified room
-      > #{prefix}schedule list all -- List all scheduled messages for any rooms
-      See also http://crontab.org/ for <cron pattern>.
-      See also http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 for <datetime pattern>.
+      ボットスケジュールコマンドは次のとおりです:
+      > #{prefix}schedule help -- このヘルプ
+      > #{prefix}schedule [add|new] "<日時形式>" <メッセージ> -- 特定の日時に実行されるメッセージをスケジュールする
+      > #{prefix}schedule [add|new] "<クロン形式>" <メッセージ> -- 繰り返し実行されるメッセージをスケジュールする
+      > #{prefix}schedule [add|new] #<ルーム> "<日時形式>" <メッセージ> -- 特定の日時に実行される特定のルームにメッセージをスケジュールする
+      > #{prefix}schedule [add|new] #<ルーム> "<クロン形式>" <メッセージ> -- 繰り返し実行される特定のルームにメッセージをスケジュールする
+      > #{prefix}schedule [cancel|del|delete|remove] <id> -- スケジュールを取り消す
+      > #{prefix}schedule [upd|update] <id> <メッセージ> -- スケジュールされたメッセージを更新する
+      > #{prefix}schedule list -- 現在のルームで予定されているすべてのメッセージを一覧表示
+      > #{prefix}schedule list #<ルーム> -- 指定されたルームで予定されているすべてのメッセージを一覧表示
+      > #{prefix}schedule list all -- すべてのスケジュールされたメッセージを一覧表示
+      クロン形式の書式パターンは http://crontab.org/ を参照してください。
+      日時形式の書式パターンは http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 を参照してください。
     """
 
   robot.respond /schedule (?:new|add)(?: #(.*))? "(.*?)" ((?:.|\s)*)$/i, (msg) ->
