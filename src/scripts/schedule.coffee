@@ -47,6 +47,26 @@ module.exports = (robot) ->
   if !robot.brain.get(STORE_KEY)
     robot.brain.set(STORE_KEY, {})
 
+  robot.respond /schedule help$/i, (msg) ->
+    prefix = msg.robot.name + ' '
+    if msg.envelope.user.roomType == 'd'
+      prefix = ''
+    msg.send """
+      Bot schedule commands are:
+      > #{prefix}schedule help -- Show this
+      > #{prefix}schedule [add|new] "<datetime pattern>" <message> -- Schedule a message that runs on a specific date and time
+      > #{prefix}schedule [add|new] "<cron pattern>" <message> -- Schedule a message that runs recurrently
+      > #{prefix}schedule [add|new] #<room> "<datetime pattern>" <message> -- Schedule a message to a specific room that runs on a specific date and time
+      > #{prefix}schedule [add|new] #<room> "<cron pattern>" <message> -- Schedule a message to a specific room that runs recurrently
+      > #{prefix}schedule [cancel|del|delete|remove] <id> -- Cancel the schedule
+      > #{prefix}schedule [upd|update] <id> <message> -- Update scheduled message
+      > #{prefix}schedule list -- List all scheduled messages for current room
+      > #{prefix}schedule list #<room> -- List all scheduled messages for specified room
+      > #{prefix}schedule list all -- List all scheduled messages for any rooms
+      See also http://crontab.org/ for <cron pattern>.
+      See also http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 for <datetime pattern>.
+    """
+
   robot.respond /schedule (?:new|add)(?: #(.*))? "(.*?)" ((?:.|\s)*)$/i, (msg) ->
     target_room = msg.match[1]
 
