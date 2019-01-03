@@ -71,7 +71,7 @@ module.exports = (robot) ->
     target_room = msg.match[1]
 
     if not is_blank(target_room) and isRestrictedRoom(target_room, robot, msg)
-      return msg.send "Creating schedule for the other room is restricted"
+      return msg.send "他のルームのスケジュール作成は制限されています"
     schedule robot, msg, target_room, msg.match[2], msg.match[3]
 
 
@@ -117,7 +117,7 @@ module.exports = (robot) ->
       text = text.replace(///#{org_text}///g, replaced_text) for org_text, replaced_text of config.list.replace_text
       msg.send text
     else
-      msg.send 'No messages have been scheduled'
+      msg.send 'メッセージはスケジュールされていません'
 
   robot.respond /schedule (?:upd|update) (\d+) ((?:.|\s)*)/i, (msg) ->
     updateSchedule robot, msg, msg.match[1], msg.match[2]
@@ -128,18 +128,18 @@ module.exports = (robot) ->
 
 schedule = (robot, msg, room, pattern, message) ->
   if JOB_MAX_COUNT <= Object.keys(JOBS).length
-    return msg.send "Too many scheduled messages"
+    return msg.send "スケジュールされたメッセージが多すぎます"
 
   id = Math.floor(Math.random() * JOB_MAX_COUNT) while !id? || JOBS[id]
   try
     job = createSchedule robot, id, pattern, msg.message.user, room, message
     if job
-      msg.send "#{id}: Schedule created"
+      msg.send "#{id}: スケジュールが作成されました"
     else
       msg.send """
-        \"#{pattern}\" is invalid pattern.
-        See http://crontab.org/ for cron-style format pattern.
-        See http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 for datetime-based format pattern.
+        \"#{pattern}\" は無効なパターンです。
+        クロン形式の書式パターンは http://crontab.org/ を参照してください。
+        日時形式の書式パターンは http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 を参照してください。
       """
   catch error
     return msg.send error.message
@@ -152,7 +152,7 @@ createSchedule = (robot, id, pattern, user, room, message) ->
   date = Date.parse(pattern)
   if !isNaN(date)
     if date < Date.now()
-      throw new Error "\"#{pattern}\" has already passed"
+      throw new Error "\"#{pattern}\" はすでに過去です"
     return createDatetimeSchedule robot, id, pattern, user, room, message
 
 
@@ -177,27 +177,27 @@ startSchedule = (robot, id, pattern, user, room, message, cb) ->
 
 updateSchedule = (robot, msg, id, message) ->
   job = JOBS[id]
-  return msg.send "Schedule #{id} not found" if !job
+  return msg.send "スケジュール #{id} は見つかりません" if !job
 
   if isRestrictedRoom(job.user.room, robot, msg)
-    return msg.send "Updating schedule for the other room is restricted"
+    return msg.send "他のルームのスケジュール更新は制限されています"
 
   job.message = message
   robot.brain.get(STORE_KEY)[id] = job.serialize()
-  msg.send "#{id}: Scheduled message updated"
+  msg.send "#{id}: スケジュールされたメッセージを更新しました"
 
 
 cancelSchedule = (robot, msg, id) ->
   job = JOBS[id]
-  return msg.send "#{id}: Schedule not found" if !job
+  return msg.send "#{id}: スケジュールが見つかりません" if !job
 
   if isRestrictedRoom(job.user.room, robot, msg)
-    return msg.send "Canceling schedule for the other room is restricted"
+    return msg.send "他のルームのスケジュール取り消しは制限されています"
 
   job.cancel()
   delete JOBS[id]
   delete robot.brain.get(STORE_KEY)[id]
-  msg.send "#{id}: Schedule canceled"
+  msg.send "#{id}: スケジュールは取り消されました"
 
 
 syncSchedules = (robot) ->
@@ -218,17 +218,17 @@ scheduleFromBrain = (robot, id, pattern, user, message) ->
   try
     createSchedule robot, id, pattern, user, user.room, message
   catch error
-    robot.send envelope, "#{id}: Failed to schedule from brain. [#{error.message}]" if config.debug is '1'
+    robot.send envelope, "#{id}: データベースからスケジュールできませんでした. [#{error.message}]" if config.debug is '1'
     return delete robot.brain.get(STORE_KEY)[id]
 
-  robot.send envelope, "#{id} scheduled from brain" if config.debug is '1'
+  robot.send envelope, "#{id} データベースからスケジュールしました" if config.debug is '1'
 
 
 storeScheduleInBrain = (robot, id, job) ->
   robot.brain.get(STORE_KEY)[id] = job.serialize()
 
   envelope = user: job.user, room: job.user.room
-  robot.send envelope, "#{id}: Schedule stored in brain asynchronously" if config.debug is '1'
+  robot.send envelope, "#{id}: スケジュールはデータベースに非同期的に保存されます" if config.debug is '1'
 
 
 difference = (obj1 = {}, obj2 = {}) ->
