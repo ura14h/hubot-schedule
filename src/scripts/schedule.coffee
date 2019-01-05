@@ -12,18 +12,19 @@
 #   HUBOT_SCHEDULE_LIST_REPLACE_TEXT - set JSON object like '{"@":"[at]"}' to configure text replacement used when listing scheduled messages
 #
 # Commands:
-#   hubot schedule [add|new] "<datetime pattern>" <message> - Schedule a message that runs on a specific date and time
-#   hubot schedule [add|new] "<cron pattern>" <message> - Schedule a message that runs recurrently
-#   hubot schedule [add|new] #<room> "<datetime pattern>" <message> - Schedule a message to a specific room that runs on a specific date and time
-#   hubot schedule [add|new] #<room> "<cron pattern>" <message> - Schedule a message to a specific room that runs recurrently
-#   hubot schedule [cancel|del|delete|remove] <id> - Cancel the schedule
-#   hubot schedule [upd|update] <id> <message> - Update scheduled message
+#   hubot schedule add "<datetime pattern>" <message> - Schedule a message that runs on a specific date and time
+#   hubot schedule add "<cron pattern>" <message> - Schedule a message that runs recurrently
+#   hubot schedule add #<room> "<datetime pattern>" <message> - Schedule a message to a specific room that runs on a specific date and time
+#   hubot schedule add #<room> "<cron pattern>" <message> - Schedule a message to a specific room that runs recurrently
+#   hubot schedule cancel <id> - Cancel the schedule
+#   hubot schedule update <id> <message> - Update scheduled message
 #   hubot schedule list - List all scheduled messages for current room
 #   hubot schedule list #<room> - List all scheduled messages for specified room
 #   hubot schedule list all - List all scheduled messages for any rooms
 #
 # Author:
 #   matsukaz <matsukaz@gmail.com>
+#   ura14h <ishiura@ja2.so-net.ne.jp>
 
 # configuration settings
 config =
@@ -51,23 +52,63 @@ module.exports = (robot) ->
     prefix = msg.robot.name + ' '
     if msg.envelope.user.roomType == 'd'
       prefix = ''
-    msg.send """
+    text = """
       ボットスケジュールコマンドは次のとおりです:
       > #{prefix}schedule help -- このヘルプ
-      > #{prefix}schedule [add|new] "<日時形式>" <メッセージ> -- 特定の日時に実行されるメッセージをスケジュールする
-      > #{prefix}schedule [add|new] "<クロン形式>" <メッセージ> -- 繰り返し実行されるメッセージをスケジュールする
-      > #{prefix}schedule [add|new] #<ルーム> "<日時形式>" <メッセージ> -- 特定の日時に実行される特定のルームにメッセージをスケジュールする
-      > #{prefix}schedule [add|new] #<ルーム> "<クロン形式>" <メッセージ> -- 繰り返し実行される特定のルームにメッセージをスケジュールする
-      > #{prefix}schedule [cancel|del|delete|remove] <id> -- スケジュールを取り消す
-      > #{prefix}schedule [upd|update] <id> <メッセージ> -- スケジュールされたメッセージを更新する
-      > #{prefix}schedule list -- 現在のルームで予定されているすべてのメッセージを一覧表示
-      > #{prefix}schedule list #<ルーム> -- 指定されたルームで予定されているすべてのメッセージを一覧表示
-      > #{prefix}schedule list all -- すべてのスケジュールされたメッセージを一覧表示
-      クロン形式の書式パターンは http://crontab.org/ を参照してください。
-      日時形式の書式パターンは http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 を参照してください。
+      > #{prefix}schedule help cron -- クロン形式のヘルプ
+      > #{prefix}schedule help datetime -- 日時形式のヘルプ
+      > #{prefix}schedule add "<日時形式>" <メッセージ> -- 特定の日時に実行されるメッセージをスケジュールする
+      > #{prefix}schedule add "<クロン形式>" <メッセージ> -- 繰り返し実行されるメッセージをスケジュールする
+    """
+    if config.deny_external_control isnt '1'
+      text += "\n"
+      text += """
+        > #{prefix}schedule add #<ルーム> "<日時形式>" <メッセージ> -- 特定の日時に実行される特定のルームにメッセージをスケジュールする
+        > #{prefix}schedule add #<ルーム> "<クロン形式>" <メッセージ> -- 繰り返し実行される特定のルームにメッセージをスケジュールする
+      """
+    text += "\n"
+    text += """
+      > #{prefix}schedule cancel <id> -- スケジュールを取り消す
+      > #{prefix}schedule update <id> <メッセージ> -- スケジュールされたメッセージを更新する
+      > #{prefix}schedule list -- 現在のルームでスケジュールされているすべてのメッセージを一覧表示
+    """
+    if config.deny_external_control isnt '1'
+      text += "\n"
+      text += """
+        > #{prefix}schedule list #<ルーム> -- 指定されたルームでスケジュールされているすべてのメッセージを一覧表示
+        > #{prefix}schedule list all -- すべてのスケジュールされたメッセージを一覧表示
+      """
+    msg.send text
+
+  robot.respond /schedule help cron$/i, (msg) ->
+    msg.send """
+      クロン形式の書式は次の通りです:
+      > "分 時 日 月 曜日"
+      書式の各項目は次の通りです:
+      > 分 -- 0〜59
+      > 時 -- 0〜23
+      > 日 -- 1〜31
+      > 月 -- 1〜12
+      > 曜日 -- 0〜7 (0 と 7 が日曜日)
+      数値の代わりにアスタリスク記号(`*`)を指定した場合は毎分、毎時、毎日、毎月などの意味になります。
+      単純な数値の代わりにカンマ区切りでリスト指定やハイフン区切りで範囲指定することもできます。
+      詳細な書式は http://crontab.org/ を参照してください。
     """
 
-  robot.respond /schedule (?:new|add)(?: #(.*))? "(.*?)" ((?:.|\s)*)$/i, (msg) ->
+  robot.respond /schedule help datetime$/i, (msg) ->
+    msg.send """
+      日時形式の書式は次の通りです:
+      > "YYYY-MM-DD hh:mm"
+      書式の各項目は次の通りです:
+      > YYYY -- 4 桁の年
+      > MM -- 2 桁の月 (必要に応じて先頭に 0 を付加)
+      > DD -- 2 桁の日付 (必要に応じて先頭に 0 を付加)
+      > hh -- 2 桁の時
+      > mm -- 2 桁の分
+    """
+
+
+  robot.respond /schedule add(?: #(.*))? "(.*?)" ((?:.|\s)*)$/i, (msg) ->
     target_room = msg.match[1]
 
     if not is_blank(target_room) and isRestrictedRoom(target_room, robot, msg)
@@ -119,10 +160,10 @@ module.exports = (robot) ->
     else
       msg.send 'メッセージはスケジュールされていません'
 
-  robot.respond /schedule (?:upd|update) (\d+) ((?:.|\s)*)/i, (msg) ->
+  robot.respond /schedule update (\d+) ((?:.|\s)*)/i, (msg) ->
     updateSchedule robot, msg, msg.match[1], msg.match[2]
 
-  robot.respond /schedule (?:del|delete|remove|cancel) (\d+)/i, (msg) ->
+  robot.respond /schedule cancel (\d+)/i, (msg) ->
     cancelSchedule robot, msg, msg.match[1]
 
 
@@ -136,10 +177,14 @@ schedule = (robot, msg, room, pattern, message) ->
     if job
       msg.send "#{id}: スケジュールが作成されました"
     else
+      prefix = msg.robot.name + ' '
+      if msg.envelope.user.roomType == 'd'
+        prefix = ''
       msg.send """
         \"#{pattern}\" は無効なパターンです。
-        クロン形式の書式パターンは http://crontab.org/ を参照してください。
-        日時形式の書式パターンは http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15 を参照してください。
+        指定できるパターンは次のヘルプで確認できます:
+        > #{prefix}schedule help cron -- クロン形式のヘルプ
+        > #{prefix}schedule help datetime -- 日時形式のヘルプ
       """
   catch error
     return msg.send error.message
@@ -218,10 +263,10 @@ scheduleFromBrain = (robot, id, pattern, user, message) ->
   try
     createSchedule robot, id, pattern, user, user.room, message
   catch error
-    robot.send envelope, "#{id}: データベースからスケジュールできませんでした. [#{error.message}]" if config.debug is '1'
+    robot.send envelope, "#{id}: データベースから再スケジュールできませんでした. [#{error.message}]" if config.debug is '1'
     return delete robot.brain.get(STORE_KEY)[id]
 
-  robot.send envelope, "#{id} データベースからスケジュールしました" if config.debug is '1'
+  robot.send envelope, "#{id} データベースから再スケジュールしました" if config.debug is '1'
 
 
 storeScheduleInBrain = (robot, id, job) ->
